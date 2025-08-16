@@ -1,0 +1,282 @@
+
+(function(w,d,s,l,i){
+  w[l]=w[l]||[];
+  w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+  var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s), dl=l!='dataLayer'?'&l='+l:'';
+  j.async=true;
+  j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+  f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TJ5HC3JQ');
+
+// Simple console logger for debug
+function eventLog(eventName, eventData) {
+  const logoStyle = `
+    background: #00abe4;
+    color: #e9f1fa;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px 0 0 10px;
+  `;
+  const eventStyle = `
+    background: #1e375a;
+    color: #e9f1fa;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 0 10px 10px 0;
+  `;
+  console.log('%c Abul Hasnat (YT) %c ' + eventName, logoStyle, eventStyle, eventData);
+}
+
+// Page viewed
+analytics.subscribe("page_viewed", function (event) {
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: 'fh_page_view',
+  };
+  dataLayer.push(dataLayerData);
+  eventLog('fh_page_view', dataLayerData);
+});
+
+// Product viewed
+analytics.subscribe("product_viewed", function (event) {
+  var pv = event.data?.productVariant || {};
+  var product = pv.product || {};
+  var priceAmount = pv.price?.amount || pv.priceV2?.amount || 0;
+  var currencyCode = pv.price?.currencyCode || pv.priceV2?.currencyCode;
+
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: 'fh_view_item',
+    ecommerce: {
+      currency: currencyCode,
+      value: Number(priceAmount),
+      items: [
+        {
+          item_id: product.id || pv.id,
+          item_name: product.title,
+          item_category: product.type,
+          variant_id: pv.id,
+          variant: pv.title === "Default Title" ? null : pv.title,
+          price: Number(priceAmount),
+          quantity: 1,
+        },
+      ],
+    },
+  };
+  dataLayer.push(dataLayerData);
+  eventLog('fh_view_item', dataLayerData);
+});
+
+// Add to cart
+analytics.subscribe("product_added_to_cart", function (event) {
+  var cl = event.data?.cartLine || {};
+  var merchandise = cl.merchandise || {};
+  var product = merchandise.product || {};
+  var totalAmount = cl.cost?.totalAmount || {};
+
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: 'fh_add_to_cart',
+    ecommerce: {
+      currency: totalAmount.currencyCode || merchandise.price?.currencyCode,
+      value: Number(totalAmount.amount || (merchandise.price?.amount || 0) * (cl.quantity || 1)),
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.title,
+          item_category: product.type,
+          variant_id: merchandise.id,
+          variant: merchandise.title === "Default Title" ? null : merchandise.title,
+          price: Number(merchandise.price?.amount || 0),
+          quantity: cl.quantity,
+        },
+      ],
+    },
+  };
+  dataLayer.push(dataLayerData);
+  eventLog('fh_add_to_cart', dataLayerData);
+});
+
+// Remove from cart
+analytics.subscribe("product_removed_from_cart", function (event) {
+  var cl = event.data?.cartLine || {};
+  var merchandise = cl.merchandise || {};
+  var product = merchandise.product || {};
+  var totalAmount = cl.cost?.totalAmount || {};
+
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: 'fh_remove_from_cart',
+    ecommerce: {
+      currency: totalAmount.currencyCode || merchandise.price?.currencyCode,
+      value: Number(totalAmount.amount || (merchandise.price?.amount || 0) * (cl.quantity || 1)),
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.title,
+          item_category: product.type,
+          variant_id: merchandise.id,
+          variant: merchandise.title === "Default Title" ? null : merchandise.title,
+          price: Number(merchandise.price?.amount || 0),
+          quantity: cl.quantity,
+        },
+      ],
+    },
+  };
+  dataLayer.push(dataLayerData);
+  eventLog('fh_remove_from_cart', dataLayerData);
+});
+
+// Cart viewed
+analytics.subscribe("cart_viewed", function (event) {
+  var items = [];
+  var cart = event.data?.cart || {};
+  var currency = cart.cost?.totalAmount?.currencyCode;
+  var value = Number(cart.cost?.totalAmount?.amount || 0);
+
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: "fh_view_cart",
+    ecommerce: {
+      currency: currency,
+      value: value,
+      items: [],
+    },
+  };
+
+  var lines = cart.lines || [];
+  lines.forEach(function (line) {
+    var item = {
+      item_id: line.merchandise?.product?.id,
+      item_name: line.merchandise?.product?.title,
+      item_category: line.merchandise?.product?.type,
+      variant_id: line.merchandise?.id,
+      variant: line.merchandise?.title === "Default Title" ? null : line.merchandise?.title,
+      price: Number(line.merchandise?.price?.amount || 0),
+      quantity: line.quantity,
+    };
+    items.push(item);
+  });
+
+  dataLayerData.ecommerce.items = items;
+
+  dataLayer.push(dataLayerData);
+  eventLog("fh_view_cart", dataLayerData);
+});
+
+// Begin checkout
+analytics.subscribe("checkout_started", function (event) {
+  var checkout = event.data?.checkout || {};
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: "fh_begin_checkout",
+    ecommerce: {
+      value: Number(checkout.totalPrice?.amount || 0),
+      tax: Number(checkout.totalTax?.amount || 0),
+      shipping: Number(checkout.shippingLine?.price?.amount || 0),
+      currency: checkout.totalPrice?.currencyCode || checkout.shippingLine?.price?.currencyCode,
+      coupon: (checkout.discountApplications || [])
+        .map(function (discount) { return discount.title || discount.code; })
+        .filter(Boolean)
+        .join(','),
+      items: [],
+    },
+  };
+
+  var lineItems = checkout.lineItems || [];
+  lineItems.forEach(function (line) {
+    var variant = line.variant || {};
+    var product = variant.product || {};
+    var item = {
+      item_id: product.id,
+      item_name: product.title,
+      item_category: product.type,
+      variant_id: variant.id,
+      variant: variant.title === "Default Title" ? null : variant.title,
+      price: Number(variant.price?.amount || 0),
+      quantity: line.quantity,
+    };
+    dataLayerData.ecommerce.items.push(item);
+  });
+
+  dataLayer.push(dataLayerData);
+  eventLog("fh_begin_checkout", dataLayerData);
+});
+
+// Purchase (checkout completed)
+analytics.subscribe("checkout_completed", function (event) {
+  var checkout = event.data?.checkout || {};
+  var dataLayerData = {
+    page_location: event.context.document.location.href,
+    timestamp: event.timestamp,
+    shopifyClientId: event.clientId,
+    eventId: event.id,
+    page_refer: event.context.document.referrer,
+    page_path: event.context.document.location.pathname,
+    event: "fh_purchase",
+    ecommerce: {
+      transaction_id: checkout.order?.id || checkout.order?.name || checkout.id || event.id,
+      value: Number(checkout.totalPrice?.amount || 0),
+      tax: Number(checkout.totalTax?.amount || 0),
+      shipping: Number(checkout.shippingLine?.price?.amount || 0),
+      currency: checkout.totalPrice?.currencyCode || checkout.shippingLine?.price?.currencyCode,
+      coupon: (checkout.discountApplications || [])
+        .map(function (discount) { return discount.title || discount.code; })
+        .filter(Boolean)
+        .join(','),
+      items: [],
+    },
+  };
+
+  var lineItems = checkout.lineItems || [];
+  lineItems.forEach(function (line) {
+    var variant = line.variant || {};
+    var product = variant.product || {};
+    var item = {
+      item_id: product.id,
+      item_name: product.title,
+      item_category: product.type,
+      variant_id: variant.id,
+      variant: variant.title === "Default Title" ? null : variant.title,
+      price: Number(variant.price?.amount || 0),
+      quantity: line.quantity,
+    };
+    dataLayerData.ecommerce.items.push(item);
+  });
+
+  dataLayer.push(dataLayerData);
+  eventLog("fh_purchase", dataLayerData);
+});
